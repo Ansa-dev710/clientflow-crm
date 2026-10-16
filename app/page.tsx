@@ -3,7 +3,22 @@
 
 import { useState } from "react";
 
-const initialLeads = [
+type Lead = {
+  id: number;
+  name: string;
+  business: string;
+  phone: string;
+  status: string;
+};
+
+type Stat = {
+  title: string;
+  value: number;
+  icon: string;
+  color: string;
+};
+
+const initialLeads: Lead[] = [
   {
     id: 1,
     name: "Dynamic Sportswear",
@@ -34,18 +49,35 @@ const initialLeads = [
   },
 ];
 
+const navigationItems = [
+  ["Dashboard", "▦"],
+  ["Leads", "♙"],
+  ["Follow-ups", "◷"],
+  ["Reports", "▤"],
+  ["Settings", "⚙"],
+];
+
+const availableStatuses = [
+  "New",
+  "Contacted",
+  "Interested",
+  "Follow-up",
+  "Converted",
+  "Lost",
+];
+
 export default function Home() {
-  const [leads, setLeads] = useState(initialLeads);
+  const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [activePage, setActivePage] = useState("Dashboard");
   const [search, setSearch] = useState("");
 
   const filteredLeads = leads.filter((lead) =>
-    `${lead.name} ${lead.business} ${lead.status}`
+    `${lead.name} ${lead.business} ${lead.status} ${lead.phone}`
       .toLowerCase()
       .includes(search.toLowerCase())
   );
 
-  const stats = [
+  const stats: Stat[] = [
     {
       title: "Total Leads",
       value: leads.length,
@@ -54,30 +86,38 @@ export default function Home() {
     },
     {
       title: "Contacted",
-      value: leads.filter((l) => l.status === "Contacted").length,
+      value: leads.filter((lead) => lead.status === "Contacted").length,
       icon: "📞",
       color: "#e5f5ed",
     },
     {
       title: "Interested",
-      value: leads.filter((l) => l.status === "Interested").length,
+      value: leads.filter((lead) => lead.status === "Interested").length,
       icon: "⭐",
       color: "#fff2d9",
     },
     {
       title: "Converted",
-      value: leads.filter((l) => l.status === "Converted").length,
+      value: leads.filter((lead) => lead.status === "Converted").length,
       icon: "✅",
       color: "#f0e8ff",
     },
   ];
 
-  function updateStatus(id, status) {
+  function updateStatus(id: number, status: string): void {
     setLeads((current) =>
       current.map((lead) =>
         lead.id === id ? { ...lead, status } : lead
       )
     );
+  }
+
+  function getStatusClass(status: string): string {
+    return `status status-${status.toLowerCase().replace(/-/g, "")}`;
+  }
+
+  function openLeadsPage(): void {
+    window.location.href = "/leads";
   }
 
   return (
@@ -93,19 +133,21 @@ export default function Home() {
 
         <p className="menu-label">WORKSPACE</p>
 
-        {[
-          ["Dashboard", "▦"],
-          ["Leads", "♙"],
-          ["Follow-ups", "◷"],
-          ["Reports", "▤"],
-          ["Settings", "⚙"],
-        ].map(([name, icon]) => (
+        {navigationItems.map(([name, icon]) => (
           <button
             key={name}
+            type="button"
             className={`nav-item ${
               activePage === name ? "active" : ""
             }`}
-            onClick={() => setActivePage(name)}
+            onClick={() => {
+              if (name === "Leads") {
+                openLeadsPage();
+                return;
+              }
+
+              setActivePage(name);
+            }}
           >
             <span>{icon}</span>
             {name}
@@ -124,9 +166,12 @@ export default function Home() {
       <main className="main">
         <header className="topbar">
           <div>
-            <p className="breadcrumb">Workspace / {activePage}</p>
+            <p className="breadcrumb">
+              Workspace / {activePage}
+            </p>
             <h1>{activePage}</h1>
           </div>
+
           <div className="topbar-right">
             <span className="online-dot" />
             <span>Workspace active</span>
@@ -138,13 +183,16 @@ export default function Home() {
           <>
             <section className="welcome">
               <div>
-                <p className="eyebrow">YOUR BUSINESS AT A GLANCE</p>
+                <p className="eyebrow">
+                  YOUR BUSINESS AT A GLANCE
+                </p>
                 <h2>Welcome back!</h2>
                 <p>
                   Track your leads, manage client calls and grow
                   your business from one place.
                 </p>
               </div>
+
               <div className="welcome-icon">📊</div>
             </section>
 
@@ -157,8 +205,13 @@ export default function Home() {
                   >
                     {stat.icon}
                   </div>
+
                   <p>{stat.title}</p>
-                  <h2>{stat.value.toString().padStart(2, "0")}</h2>
+
+                  <h2>
+                    {String(stat.value).padStart(2, "0")}
+                  </h2>
+
                   <span className="stat-note">
                     Current lead records
                   </span>
@@ -172,9 +225,11 @@ export default function Home() {
                   <h2>Recent Leads</h2>
                   <p>Manage your client pipeline</p>
                 </div>
+
                 <button
+                  type="button"
                   className="primary-btn"
-                  onClick={() => setActivePage("Leads")}
+                  onClick={openLeadsPage}
                 >
                   + View Leads
                 </button>
@@ -185,8 +240,11 @@ export default function Home() {
                   type="text"
                   placeholder="Search leads or business type..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(event) =>
+                    setSearch(event.target.value)
+                  }
                 />
+
                 <span>{filteredLeads.length} records</span>
               </div>
 
@@ -200,32 +258,30 @@ export default function Home() {
                       <th>STATUS</th>
                     </tr>
                   </thead>
+
                   <tbody>
                     {filteredLeads.map((lead) => (
                       <tr key={lead.id}>
                         <td>
                           <strong>{lead.name}</strong>
                         </td>
+
                         <td>{lead.business}</td>
                         <td>{lead.phone}</td>
+
                         <td>
                           <select
-                            className={`status status-${lead.status
-                              .toLowerCase()
-                              .replace("-", "")}`}
+                            className={getStatusClass(lead.status)}
                             value={lead.status}
-                            onChange={(e) =>
-                              updateStatus(lead.id, e.target.value)
+                            onChange={(event) =>
+                              updateStatus(
+                                lead.id,
+                                event.target.value
+                              )
                             }
+                            aria-label={`Status for ${lead.name}`}
                           >
-                            {[
-                              "New",
-                              "Contacted",
-                              "Interested",
-                              "Follow-up",
-                              "Converted",
-                              "Lost",
-                            ].map((status) => (
+                            {availableStatuses.map((status) => (
                               <option key={status} value={status}>
                                 {status}
                               </option>
@@ -250,35 +306,19 @@ export default function Home() {
         ) : (
           <section className="leads-section page-placeholder">
             <p className="eyebrow">CLIENTFLOW WORKSPACE</p>
+
             <h2>{activePage}</h2>
+
             <p>
-              This section is ready for the next development step.
+              {activePage === "Follow-ups"
+                ? "Manage your upcoming client follow-ups."
+                : activePage === "Reports"
+                  ? "Review your sales and lead performance."
+                  : "Manage your workspace preferences."}
             </p>
-            {activePage === "Leads" && (
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>BUSINESS</th>
-                      <th>TYPE</th>
-                      <th>PHONE</th>
-                      <th>STATUS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {leads.map((lead) => (
-                      <tr key={lead.id}>
-                        <td>{lead.name}</td>
-                        <td>{lead.business}</td>
-                        <td>{lead.phone}</td>
-                        <td>{lead.status}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+
             <button
+              type="button"
               className="primary-btn"
               onClick={() => setActivePage("Dashboard")}
             >
